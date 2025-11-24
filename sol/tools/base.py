@@ -1,11 +1,11 @@
 import abc
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field
 
-class ToolResult(BaseModel):
-    success: bool
-    output: str
-    error: Optional[str] = None
+class ToolResult:
+    def __init__(self, success: bool, output: str, error: Optional[str] = None):
+        self.success = success
+        self.output = output
+        self.error = error
 
 class BaseTool(abc.ABC):
     name: str
@@ -16,7 +16,7 @@ class BaseTool(abc.ABC):
     async def execute(self, **kwargs) -> ToolResult:
         pass
 
-    def to_schema((self)) -> Dict[str, Any]:
+    def to_schema(self) -> Dict[str, Any]:
         return {
             "type": "function",
             "function": {
