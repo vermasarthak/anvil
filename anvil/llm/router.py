@@ -1,8 +1,8 @@
 import os
 from typing import Dict, Type, Optional
-from sol.llm.base import BaseLLMProvider
-from sol.llm.ollama import OllamaProvider
-from sol.llm.google import GoogleProvider
+from anvil.llm.base import BaseLLMProvider
+from anvil.llm.ollama import OllamaProvider
+from anvil.llm.google import GoogleProvider
 
 class LLMRouter:
     _providers: Dict[str, Type[BaseLLMProvider]] = {

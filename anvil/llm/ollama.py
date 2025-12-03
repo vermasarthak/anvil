@@ -1,8 +1,8 @@
 import json
 import httpx
 from typing import List, Dict, Any, Optional
-from sol.llm.base import BaseLLMProvider
-from sol.llm.schema import AgentMessage, LLMResponse, ToolCall
+from anvil.llm.base import BaseLLMProvider
+from anvil.llm.schema import AgentMessage, LLMResponse, ToolCall
 
 class OllamaProvider(BaseLLMProvider):
     def __init__(self, model_name: str = "qwen3-coder:14b", api_key: Optional[str] = None, base_url: Optional[str] = None):

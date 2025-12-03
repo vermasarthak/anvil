@@ -5,15 +5,15 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from sol.llm.router import LLMRouter
-from sol.agent.loop import AgentLoop
-from sol.index.indexer import ASTIndexer
-from sol.tools.file_ops import ReadFileTool, EditFileTool, CreateFileTool
-from sol.tools.shell import RunCommandTool
-from sol.tools.search import SearchCodebaseTool
-from sol.tools.git import GitDiffTool, GitCommitTool
+from anvil.llm.router import LLMRouter
+from anvil.agent.loop import AgentLoop
+from anvil.index.indexer import ASTIndexer
+from anvil.tools.file_ops import ReadFileTool, EditFileTool, CreateFileTool
+from anvil.tools.shell import RunCommandTool
+from anvil.tools.search import SearchCodebaseTool
+from anvil.tools.git import GitDiffTool, GitCommitTool
 
-app = FastAPI(title="Sol Engine Server")
+app = FastAPI(title="Anvil Engine Server")
 
 class ConfigModel(BaseModel):
     provider: str = "google"

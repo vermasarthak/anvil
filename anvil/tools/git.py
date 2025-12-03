@@ -1,6 +1,6 @@
 import os
 from typing import Optional
-from sol.tools.base import BaseTool, ToolResult
+from anvil.tools.base import BaseTool, ToolResult
 
 class GitDiffTool(BaseTool):
     name = "git_diff"
