@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Play, Cpu, Code, FileCode, History, Terminal as TerminalIcon, 
   Folder, File, ChevronRight, ChevronDown, CheckCircle, AlertCircle, 
-  Sparkles, Zap, Shield, HelpCircle, CornerDownLeft, RefreshCw, X
+  Sparkles, Zap, Shield, HelpCircle, CornerDownLeft, RefreshCw, X, MessageSquare, Bot
 } from 'lucide-react';
 
 interface Step {
@@ -26,9 +26,9 @@ interface SessionItem {
 }
 
 const MODEL_PRESETS = [
-  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Free Tier)', provider: 'google', model: 'gemini-2.5-flash', tag: '⚡ Recommended Cloud', cost: 'Free $0' },
-  { id: 'ollama/qwen3-coder:14b', name: 'Qwen3 Coder 14B (Local)', provider: 'ollama', model: 'qwen3-coder:14b', tag: '🔒 100% Local', cost: 'Free $0' },
-  { id: 'ollama/deepseek-v4:32b', name: 'DeepSeek V4 32B (Local)', provider: 'ollama', model: 'deepseek-v4:32b', tag: '🧠 Local Reasoning', cost: 'Free $0' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google', model: 'gemini-2.5-flash', tag: '⚡ Free Cloud (Instant)', cost: 'Free $0' },
+  { id: 'ollama/qwen3-coder:14b', name: 'Qwen3 Coder 14B', provider: 'ollama', model: 'qwen3-coder:14b', tag: '🔒 100% Local (Requires Ollama)', cost: 'Free $0' },
+  { id: 'ollama/deepseek-v4:32b', name: 'DeepSeek V4 32B', provider: 'ollama', model: 'deepseek-v4:32b', tag: '🧠 Local Reasoning', cost: 'Free $0' },
 ];
 
 export default function App() {
@@ -99,9 +99,9 @@ export default function App() {
         setTerminalLogs((prev) => [...prev, `[Tool Call] Executing: ${data.data.name}`]);
       } else if (data.type === 'tool_call_end') {
         setTerminalLogs((prev) => [...prev, `[Tool Result] ${data.data.output || 'Success'}`]);
-      } else if (data.type === 'task_complete') {
+      } else if (data.type === 'task_complete' || data.type === 'error' || data.type === 'task_limit_reached') {
         setIsExecuting(false);
-        setTerminalLogs((prev) => [...prev, '[Task Complete] Agent finished task execution.']);
+        setTerminalLogs((prev) => [...prev, `[Event] ${data.type}`]);
       }
       
       fetchSessions();
@@ -136,6 +136,79 @@ export default function App() {
     if (ws) {
       ws.send(JSON.stringify({ prompt }));
     }
+  };
+
+  const renderStepContent = (step: Step) => {
+    if (step.type === 'task_start') {
+      return (
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-indigo-200 text-xs">
+          <Sparkles className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-bold text-white mb-0.5">Task Initiated</div>
+            <div className="font-mono text-slate-300">"{step.data?.prompt}"</div>
+          </div>
+        </div>
+      );
+    }
+    if (step.type === 'thinking') {
+      return (
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs">
+          <Bot className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <div className="font-bold text-purple-300">Agent Reasoning</div>
+            <div className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed">{step.data?.content}</div>
+          </div>
+        </div>
+      );
+    }
+    if (step.type === 'tool_call_start') {
+      return (
+        <div className="p-3 rounded-lg bg-slate-900/80 border border-amber-900/50 text-xs font-mono">
+          <div className="flex items-center gap-2 font-bold text-amber-400 mb-1">
+            <Zap className="h-3.5 w-3.5" /> Calling Tool: {step.data?.name}
+          </div>
+          <pre className="text-slate-300 bg-slate-950 p-2 rounded border border-slate-800/60 overflow-x-auto">
+            {JSON.stringify(step.data?.arguments, null, 2)}
+          </pre>
+        </div>
+      );
+    }
+    if (step.type === 'tool_call_end') {
+      const isSuccess = step.data?.success;
+      return (
+        <div className={`p-3 rounded-lg border text-xs font-mono ${isSuccess ? 'bg-emerald-950/30 border-emerald-800/50' : 'bg-rose-950/30 border-rose-800/50'}`}>
+          <div className={`flex items-center gap-2 font-bold mb-1 ${isSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {isSuccess ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+            Tool Output: {step.data?.name}
+          </div>
+          <pre className="text-slate-300 bg-slate-950 p-2 rounded border border-slate-800/60 overflow-x-auto whitespace-pre-wrap">
+            {step.data?.output}
+          </pre>
+        </div>
+      );
+    }
+    if (step.type === 'error') {
+      return (
+        <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-700/80 text-rose-200 text-xs space-y-2">
+          <div className="flex items-center gap-2 font-bold text-rose-300 text-sm">
+            <AlertCircle className="h-4 w-4 text-rose-400" /> Error Encountered
+          </div>
+          <div className="font-mono bg-slate-950/80 p-3 rounded-lg border border-rose-900/50 whitespace-pre-wrap text-rose-300">
+            {step.data?.error}
+          </div>
+          <div className="text-[11px] text-rose-400 font-sans">
+            💡 <b>Tip:</b> If you selected Ollama without running local Ollama service, switch to <b>Gemini 2.5 Flash (Free Tier)</b> in the sidebar for instant zero-config cloud execution!
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60 text-xs font-mono">
+        <div className="text-slate-400 font-bold mb-1 uppercase tracking-wider text-[10px]">{step.type}</div>
+        <pre className="whitespace-pre-wrap text-slate-200">{JSON.stringify(step.data, null, 2)}</pre>
+      </div>
+    );
   };
 
   return (
@@ -208,7 +281,7 @@ export default function App() {
         {/* Status Bar */}
         <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs">
           <span className="text-slate-500 font-mono text-[11px]">Backend Status</span>
-          <span className={`inline-flex items-center gap-1.5 font-medium px-2 py-1 rounded-full text-[11px] ${
+          <span className={`inline-flex items-center gap-1.5 font-medium px-2.5 py-1 rounded-full text-[11px] ${
             connected ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50' : 'bg-amber-950/60 text-amber-400 border border-amber-800/50'
           }`}>
             <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
@@ -290,16 +363,8 @@ export default function App() {
                 </div>
               ) : (
                 steps.map((step, idx) => (
-                  <div key={idx} className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-lg backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50 font-mono">
-                        {step.type}
-                      </span>
-                      {step.timestamp && <span className="text-[10px] font-mono text-slate-500">{step.timestamp}</span>}
-                    </div>
-                    <pre className="whitespace-pre-wrap text-xs font-mono text-slate-200 bg-slate-950/80 p-3 rounded-lg border border-slate-800/50 overflow-x-auto">
-                      {JSON.stringify(step.data, null, 2)}
-                    </pre>
+                  <div key={idx}>
+                    {renderStepContent(step)}
                   </div>
                 ))
               )}
