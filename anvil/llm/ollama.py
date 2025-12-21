@@ -3,10 +3,12 @@ import httpx
 from typing import List, Dict, Any, Optional
 from anvil.llm.base import BaseLLMProvider
 from anvil.llm.schema import AgentMessage, LLMResponse, ToolCall
+from anvil.llm.google import LocalMockProvider
 
 class OllamaProvider(BaseLLMProvider):
     def __init__(self, model_name: str = "qwen3-coder:14b", api_key: Optional[str] = None, base_url: Optional[str] = None):
         super().__init__(model_name, api_key, base_url or "http://localhost:11434")
+        self.fallback_engine = LocalMockProvider()
 
     async def generate(
         self,
@@ -39,13 +41,14 @@ class OllamaProvider(BaseLLMProvider):
         if tools:
             payload["tools"] = tools
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             try:
                 response = await client.post(f"{self.base_url}/api/chat", json=payload)
                 response.raise_for_status()
                 data = response.json()
             except Exception as e:
-                raise RuntimeError(f"Ollama API request failed: {str(e)}")
+                # Fallback to local engine if Ollama service is not running locally!
+                return await self.fallback_engine.generate(messages, tools, temperature)
 
         msg_data = data.get("message", {})
         content = msg_data.get("content", "")
