@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Play, Cpu, Code, FileCode, History, Terminal as TerminalIcon, 
   Folder, File, ChevronRight, ChevronDown, CheckCircle, AlertCircle, 
-  Sparkles, Zap, Shield, HelpCircle, CornerDownLeft, RefreshCw, X, MessageSquare, Bot
+  Shield, RefreshCw, Bot, Terminal
 } from 'lucide-react';
 
 interface Step {
@@ -26,9 +26,9 @@ interface SessionItem {
 }
 
 const MODEL_PRESETS = [
-  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google', model: 'gemini-2.5-flash', tag: '⚡ Free Cloud (Instant)', cost: 'Free $0' },
-  { id: 'ollama/qwen3-coder:14b', name: 'Qwen3 Coder 14B', provider: 'ollama', model: 'qwen3-coder:14b', tag: '🔒 100% Local (Requires Ollama)', cost: 'Free $0' },
-  { id: 'ollama/deepseek-v4:32b', name: 'DeepSeek V4 32B', provider: 'ollama', model: 'deepseek-v4:32b', tag: '🧠 Local Reasoning', cost: 'Free $0' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google', model: 'gemini-2.5-flash', tag: 'Cloud API', cost: 'Free Tier' },
+  { id: 'ollama/qwen3-coder:14b', name: 'Qwen3 Coder 14B', provider: 'ollama', model: 'qwen3-coder:14b', tag: 'Local Ollama', cost: 'Local $0' },
+  { id: 'ollama/deepseek-v4:32b', name: 'DeepSeek V4 32B', provider: 'ollama', model: 'deepseek-v4:32b', tag: 'Local Reasoning', cost: 'Local $0' },
 ];
 
 export default function App() {
@@ -43,7 +43,7 @@ export default function App() {
   const [selectedPreset, setSelectedPreset] = useState(MODEL_PRESETS[0].id);
   const [apiKey, setApiKey] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
-  const [terminalLogs, setTerminalLogs] = useState<string[]>(['[System] Anvil Studio Environment Ready.']);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>(['[System] Anvil Engine Environment Initialized.']);
 
   const workspaceFiles = [
     {
@@ -85,23 +85,23 @@ export default function App() {
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onopen = () => {
       setConnected(true);
-      setTerminalLogs((prev) => [...prev, '[WebSocket] Connected to Anvil Engine backend.']);
+      setTerminalLogs((prev) => [...prev, '[WebSocket] JSON-RPC transport established with Anvil Engine.']);
     };
     socket.onclose = () => {
       setConnected(false);
-      setTerminalLogs((prev) => [...prev, '[WebSocket] Disconnected from server. Retrying...']);
+      setTerminalLogs((prev) => [...prev, '[WebSocket] Transport disconnected. Reconnecting...']);
     };
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setSteps((prev) => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }]);
       
       if (data.type === 'tool_call_start') {
-        setTerminalLogs((prev) => [...prev, `[Tool Call] Executing: ${data.data.name}`]);
+        setTerminalLogs((prev) => [...prev, `[Tool Subprocess] Executing tool: ${data.data.name}`]);
       } else if (data.type === 'tool_call_end') {
-        setTerminalLogs((prev) => [...prev, `[Tool Result] ${data.data.output || 'Success'}`]);
+        setTerminalLogs((prev) => [...prev, `[Tool Subprocess] Output: ${data.data.output || 'OK'}`]);
       } else if (data.type === 'task_complete' || data.type === 'error' || data.type === 'task_limit_reached') {
         setIsExecuting(false);
-        setTerminalLogs((prev) => [...prev, `[Event] ${data.type}`]);
+        setTerminalLogs((prev) => [...prev, `[Execution Loop] Task lifecycle terminated with event: ${data.type}`]);
       }
       
       fetchSessions();
@@ -115,7 +115,7 @@ export default function App() {
     
     setIsExecuting(true);
     setSteps([]);
-    setTerminalLogs((prev) => [...prev, `\n> User Task: ${prompt}`]);
+    setTerminalLogs((prev) => [...prev, `\n> Task Execution Request: ${prompt}`]);
 
     const activeModelConfig = MODEL_PRESETS.find((m) => m.id === selectedPreset) || MODEL_PRESETS[0];
 
@@ -141,11 +141,11 @@ export default function App() {
   const renderStepContent = (step: Step) => {
     if (step.type === 'task_start') {
       return (
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-indigo-200 text-xs">
-          <Sparkles className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-indigo-200 text-xs font-mono">
+          <Terminal className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
           <div>
             <div className="font-bold text-white mb-0.5">Task Initiated</div>
-            <div className="font-mono text-slate-300">"{step.data?.prompt}"</div>
+            <div className="text-slate-300">"{step.data?.prompt}"</div>
           </div>
         </div>
       );
@@ -155,7 +155,7 @@ export default function App() {
         <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs">
           <Bot className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <div className="font-bold text-purple-300">Agent Reasoning</div>
+            <div className="font-bold text-purple-300 font-mono">Agent Reasoning</div>
             <div className="whitespace-pre-wrap font-sans text-slate-300 leading-relaxed">{step.data?.content}</div>
           </div>
         </div>
@@ -165,7 +165,7 @@ export default function App() {
       return (
         <div className="p-3 rounded-lg bg-slate-900/80 border border-amber-900/50 text-xs font-mono">
           <div className="flex items-center gap-2 font-bold text-amber-400 mb-1">
-            <Zap className="h-3.5 w-3.5" /> Calling Tool: {step.data?.name}
+            <Code className="h-3.5 w-3.5" /> Tool Dispatch: {step.data?.name}
           </div>
           <pre className="text-slate-300 bg-slate-950 p-2 rounded border border-slate-800/60 overflow-x-auto">
             {JSON.stringify(step.data?.arguments, null, 2)}
@@ -179,7 +179,7 @@ export default function App() {
         <div className={`p-3 rounded-lg border text-xs font-mono ${isSuccess ? 'bg-emerald-950/30 border-emerald-800/50' : 'bg-rose-950/30 border-rose-800/50'}`}>
           <div className={`flex items-center gap-2 font-bold mb-1 ${isSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
             {isSuccess ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-            Tool Output: {step.data?.name}
+            Execution Result: {step.data?.name}
           </div>
           <pre className="text-slate-300 bg-slate-950 p-2 rounded border border-slate-800/60 overflow-x-auto whitespace-pre-wrap">
             {step.data?.output}
@@ -190,14 +190,11 @@ export default function App() {
     if (step.type === 'error') {
       return (
         <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-700/80 text-rose-200 text-xs space-y-2">
-          <div className="flex items-center gap-2 font-bold text-rose-300 text-sm">
-            <AlertCircle className="h-4 w-4 text-rose-400" /> Error Encountered
+          <div className="flex items-center gap-2 font-bold text-rose-300 text-sm font-mono">
+            <AlertCircle className="h-4 w-4 text-rose-400" /> Runtime Exception
           </div>
           <div className="font-mono bg-slate-950/80 p-3 rounded-lg border border-rose-900/50 whitespace-pre-wrap text-rose-300">
             {step.data?.error}
-          </div>
-          <div className="text-[11px] text-rose-400 font-sans">
-            💡 <b>Tip:</b> If you selected Ollama without running local Ollama service, switch to <b>Gemini 2.5 Flash (Free Tier)</b> in the sidebar for instant zero-config cloud execution!
           </div>
         </div>
       );
@@ -218,20 +215,20 @@ export default function App() {
         <div>
           {/* Logo Branding */}
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/60">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
-              <Zap className="h-5 w-5 text-white" />
+            <div className="p-2 rounded-xl bg-slate-800 border border-slate-700">
+              <Cpu className="h-5 w-5 text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-wider text-white">ANVIL</h1>
-              <p className="text-[10px] text-indigo-400 font-mono tracking-widest uppercase">Autonomous Studio</p>
+              <h1 className="text-lg font-bold tracking-wider text-white">ANVIL</h1>
+              <p className="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Agentic Workspace</p>
             </div>
           </div>
 
           {/* Model Selector Cards */}
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-400" /> Active Model Engine
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block font-mono">
+                Model Router Configuration
               </label>
               
               <div className="space-y-2">
@@ -241,9 +238,9 @@ export default function App() {
                     <div
                       key={preset.id}
                       onClick={() => setSelectedPreset(preset.id)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-indigo-950/40 border-indigo-500/80 shadow-md shadow-indigo-950/50'
+                          ? 'bg-slate-800/90 border-indigo-500/80 shadow-sm'
                           : 'bg-slate-900/50 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
                       }`}
                     >
@@ -251,11 +248,11 @@ export default function App() {
                         <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-slate-300'}`}>
                           {preset.name}
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-800/50">
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
                           {preset.cost}
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono">{preset.tag}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{preset.tag}</div>
                     </div>
                   );
                 })}
@@ -264,15 +261,15 @@ export default function App() {
 
             {/* Optional API Key Input */}
             <div className="pt-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block flex items-center gap-1">
-                <Shield className="h-3 w-3 text-slate-400" /> API Key (Optional)
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block flex items-center gap-1 font-mono">
+                <Shield className="h-3 w-3 text-slate-400" /> API Key (Environment Fallback)
               </label>
               <input
                 type="password"
-                placeholder="Bring your own key or leave blank for free"
+                placeholder="Optional provider API key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full rounded-lg bg-slate-900/80 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono"
+                className="w-full rounded-lg bg-slate-900/80 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 font-mono"
               />
             </div>
           </div>
@@ -280,22 +277,22 @@ export default function App() {
 
         {/* Status Bar */}
         <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-mono text-[11px]">Backend Status</span>
-          <span className={`inline-flex items-center gap-1.5 font-medium px-2.5 py-1 rounded-full text-[11px] ${
+          <span className="text-slate-500 font-mono text-[11px]">System Status</span>
+          <span className={`inline-flex items-center gap-1.5 font-medium px-2.5 py-1 rounded text-[11px] font-mono ${
             connected ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50' : 'bg-amber-950/60 text-amber-400 border border-amber-800/50'
           }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-            {connected ? 'Engine Ready' : 'Connecting...'}
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            {connected ? 'CONNECTED' : 'CONNECTING'}
           </span>
         </div>
       </div>
 
       {/* Workspace Directory Bar */}
-      <div className="w-64 border-r border-slate-800/80 bg-[#0B0F19]/60 p-3 overflow-y-auto">
+      <div className="w-64 border-r border-slate-800/80 bg-[#0B0F19]/60 p-3 overflow-y-auto font-mono text-xs">
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 px-2 flex items-center gap-1.5">
-          <Folder className="h-3.5 w-3.5 text-indigo-400" /> Workspace Files
+          <Folder className="h-3.5 w-3.5 text-indigo-400" /> Repository Files
         </div>
-        <div className="space-y-1 font-mono text-xs text-slate-300">
+        <div className="space-y-1 text-slate-300">
           {workspaceFiles.map((f, i) => (
             <div key={i} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-slate-800/60 cursor-pointer">
               <File className="h-3.5 w-3.5 text-slate-500" />
@@ -308,7 +305,7 @@ export default function App() {
       {/* Main Execution Studio */}
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#090D16]">
         {/* Top Header Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-slate-800/80 bg-[#0B0F19]/80 px-6 py-1">
+        <div className="flex items-center justify-between border-b border-slate-800/80 bg-[#0B0F19]/80 px-6 py-1 font-mono">
           <div className="flex items-center gap-1">
             <button
               onClick={() => setActiveTab('stream')}
@@ -318,7 +315,7 @@ export default function App() {
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Code className="h-4 w-4" /> Agent Execution Stream
+              <Code className="h-4 w-4" /> Agent Event Stream
             </button>
             <button
               onClick={() => setActiveTab('diff')}
@@ -338,12 +335,12 @@ export default function App() {
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <TerminalIcon className="h-4 w-4" /> Terminal Output
+              <TerminalIcon className="h-4 w-4" /> Server Audit Log
             </button>
           </div>
 
-          <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
-            <span>Local Engine Port: 8000</span>
+          <div className="text-xs text-slate-500 flex items-center gap-2">
+            <span>Port: 8000</span>
           </div>
         </div>
 
@@ -352,13 +349,11 @@ export default function App() {
           {activeTab === 'stream' && (
             <div className="h-full overflow-y-auto space-y-4 pr-2">
               {steps.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-800/80 rounded-2xl p-8 text-center bg-slate-900/20">
-                  <div className="p-4 rounded-full bg-indigo-950/50 border border-indigo-800/50 mb-4 text-indigo-400">
-                    <Sparkles className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-base font-bold text-white mb-1">Anvil Studio is Idle</h3>
-                  <p className="text-xs text-slate-400 max-w-sm">
-                    Enter any programming task instruction below. Anvil will analyze the workspace, construct a plan, edit files, and self-verify test suites.
+                <div className="h-full flex flex-col items-center justify-center border border-slate-800 rounded-xl p-8 text-center bg-slate-900/10">
+                  <Cpu className="h-8 w-8 text-slate-600 mb-3" />
+                  <h3 className="text-sm font-bold text-slate-300 mb-1 font-mono">Agent Engine Idle</h3>
+                  <p className="text-xs text-slate-500 max-w-sm">
+                    Specify task instruction below. Anvil will execute tool calls and generate verified code.
                   </p>
                 </div>
               ) : (
@@ -372,18 +367,18 @@ export default function App() {
           )}
 
           {activeTab === 'diff' && (
-            <div className="h-full border border-slate-800/80 rounded-2xl overflow-hidden bg-slate-950">
-              <div className="p-4 text-xs font-mono text-slate-500 border-b border-slate-800">
-                Active unified git diffs generated during task execution:
+            <div className="h-full border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+              <div className="p-3 text-xs font-mono text-slate-500 border-b border-slate-800">
+                Unified Diff Inspection Output:
               </div>
               <div className="p-4 font-mono text-xs text-slate-400">
-                {diffs.length === 0 ? "No active file modifications recorded yet." : JSON.stringify(diffs, null, 2)}
+                {diffs.length === 0 ? "No active file modifications recorded." : JSON.stringify(diffs, null, 2)}
               </div>
             </div>
           )}
 
           {activeTab === 'terminal' && (
-            <div className="h-full border border-slate-800/80 rounded-2xl overflow-hidden bg-[#05070D] p-4 font-mono text-xs text-emerald-400 overflow-y-auto space-y-1">
+            <div className="h-full border border-slate-800 rounded-xl overflow-hidden bg-[#05070D] p-4 font-mono text-xs text-emerald-400 overflow-y-auto space-y-1">
               {terminalLogs.map((log, i) => (
                 <div key={i} className="leading-relaxed">{log}</div>
               ))}
@@ -396,29 +391,29 @@ export default function App() {
           <div className="relative flex items-center">
             <input
               type="text"
-              placeholder="Ask Anvil to build a feature, refactor code, or run test suites..."
+              placeholder="Execute agentic instruction (e.g., refactor module, run pytest)..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isExecuting && handleRun()}
               disabled={isExecuting}
-              className="w-full rounded-2xl bg-slate-900 border border-slate-700/80 pl-5 pr-32 py-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 shadow-2xl transition-all"
+              className="w-full rounded-xl bg-slate-900 border border-slate-700/80 pl-5 pr-32 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/80 font-mono shadow-xl transition-all"
             />
             <button
               onClick={handleRun}
               disabled={isExecuting || !prompt.trim()}
-              className={`absolute right-2 flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-lg transition-all ${
+              className={`absolute right-2 flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-white transition-all font-mono ${
                 isExecuting || !prompt.trim()
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 active:scale-95 shadow-indigo-500/25'
+                  : 'bg-indigo-600 hover:bg-indigo-500 active:scale-95'
               }`}
             >
               {isExecuting ? (
                 <>
-                  <RefreshCw className="h-4 w-4 animate-spin" /> Executing...
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" /> RUNNING
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 fill-white" /> Execute
+                  <Play className="h-3.5 w-3.5 fill-white" /> RUN
                 </>
               )}
             </button>
