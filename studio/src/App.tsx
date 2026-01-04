@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Play, Cpu, Code, FileCode, History, Terminal as TerminalIcon, 
   Folder, File, ChevronRight, ChevronDown, CheckCircle, AlertCircle, 
-  Shield, RefreshCw, Bot, Terminal
+  Shield, RefreshCw, Bot, Terminal, Users, Star, Activity, Download
 } from 'lucide-react';
 
 interface Step {
@@ -213,14 +213,29 @@ export default function App() {
       {/* Sidebar: Navigation & Models */}
       <div className="w-80 border-r border-slate-800/80 bg-[#0B0F19] p-4 flex flex-col justify-between shadow-2xl z-10">
         <div>
-          {/* Logo Branding */}
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/60">
-            <div className="p-2 rounded-xl bg-slate-800 border border-slate-700">
-              <Cpu className="h-5 w-5 text-indigo-400" />
+          {/* Minecraft / CurseForge Inspired Pixel-Art Anvil Logo */}
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800/60">
+            <div className="relative p-1 rounded-xl bg-slate-900 border border-indigo-500/40 shadow-lg shadow-indigo-500/10 group overflow-hidden">
+              <img src="/logo.jpg" alt="Anvil Logo" className="h-10 w-10 object-cover rounded-lg transform group-hover:scale-105 transition-transform" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-wider text-white">ANVIL</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl font-black tracking-wider text-white font-mono">ANVIL</h1>
+                <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-mono px-1.5 py-0.2 rounded border border-indigo-500/30">v1.2</span>
+              </div>
               <p className="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Agentic Workspace</p>
+            </div>
+          </div>
+
+          {/* Active Community Stats Badge */}
+          <div className="mb-5 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] font-mono flex items-center justify-between text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-indigo-400" />
+              <span>1.4k Active Devs</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+              <span className="text-white font-bold">2.8k</span>
             </div>
           </div>
 
