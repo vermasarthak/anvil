@@ -120,18 +120,3 @@ timeout_seconds = 60
 ## License
 
 Apache 2.0. Built by Sarthak Verma.
-# Telemetry streaming update
-
-<!-- Activity sync for anvil -->
-
-<!-- Benchmark metric log for anvil -->
-
-<!-- Audit patch 0 -->
-
-<!-- Audit patch 5 -->
-
-<!-- Audit patch 10 -->
-
-<!-- Audit patch 15 -->
-
-<!-- Audit patch 20 -->

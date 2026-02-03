@@ -8,3 +8,9 @@ build/
 *.egg-info/
 .env
 sol.toml
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+sessions.db
