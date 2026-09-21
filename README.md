@@ -123,3 +123,5 @@ Apache 2.0. Built by Sarthak Verma.
 # Telemetry streaming update
 
 <!-- Activity sync for anvil -->
+
+<!-- Benchmark metric log for anvil -->
