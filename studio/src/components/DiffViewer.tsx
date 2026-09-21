@@ -19,7 +19,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ files }) => {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-slate-500">
         <p className="text-sm">No active file diffs generated yet.</p>
-        <p className="text-xs text-slate-600 mt-1">Edits performed by Sol will appear here in real time.</p>
+        <p className="text-xs text-slate-600 mt-1">Edits performed by Anvil will appear here in real time.</p>
       </div>
     );
   }

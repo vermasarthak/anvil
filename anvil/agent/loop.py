@@ -1,8 +1,8 @@
 import asyncio
 from typing import List, Dict, Any, Callable, Awaitable
-from sol.llm.base import BaseLLMProvider
-from sol.llm.schema import AgentMessage
-from sol.tools.base import BaseTool
+from anvil.llm.base import BaseLLMProvider
+from anvil.llm.schema import AgentMessage
+from anvil.tools.base import BaseTool
 
 class AgentLoop:
     def __init__(
@@ -24,7 +24,7 @@ class AgentLoop:
         self.messages.append(
             AgentMessage(
                 role="system",
-                content="You are Sol, an expert autonomous AI software engineer. Analyze the workspace, formulate a precise plan, and execute tool calls to complete the user's task."
+                content="You are Anvil, an expert autonomous AI software engineer. Analyze the workspace, formulate a precise plan, and execute tool calls to complete the user's task."
             )
         )
         self.messages.append(AgentMessage(role="user", content=prompt))

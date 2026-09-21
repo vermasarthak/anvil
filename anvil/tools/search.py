@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any, Optional
-from sol.tools.base import BaseTool, ToolResult
-from sol.index.indexer import ASTIndexer
+from anvil.tools.base import BaseTool, ToolResult
+from anvil.index.indexer import ASTIndexer
 
 class SearchCodebaseTool(BaseTool):
     name = "search_codebase"

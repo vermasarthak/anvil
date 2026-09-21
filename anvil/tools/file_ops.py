@@ -1,7 +1,7 @@
 import os
 import glob
 from typing import Optional
-from sol.tools.base import BaseTool, ToolResult
+from anvil.tools.base import BaseTool, ToolResult
 
 class ReadFileTool(BaseTool):
     name = "read_file"
@@ -9,7 +9,7 @@ class ReadFileTool(BaseTool):
     parameters = {
         "type": "object",
         "properties": {
-            "path": {"type": "string", "description": "Relative or absolute path to the target file."},
+            "path": {"type": "string", "description": "Relative or abanvilute path to the target file."},
             "start_line": {"type": "integer", "description": "Optional 1-indexed starting line number."},
             "end_line": {"type": "integer", "description": "Optional 1-indexed ending line number."}
         },

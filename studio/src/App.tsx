@@ -20,19 +20,19 @@ export default function App() {
 
   const workspaceFiles: FileNode[] = [
     {
-      name: 'sol',
-      path: 'sol',
+      name: 'anvil',
+      path: 'anvil',
       type: 'directory',
       children: [
-        { name: 'server.py', path: 'sol/server.py', type: 'file', status: 'modified' },
-        { name: 'cli.py', path: 'sol/cli.py', type: 'file' },
+        { name: 'server.py', path: 'anvil/server.py', type: 'file', status: 'modified' },
+        { name: 'cli.py', path: 'anvil/cli.py', type: 'file' },
         {
           name: 'agent',
-          path: 'sol/agent',
+          path: 'anvil/agent',
           type: 'directory',
           children: [
-            { name: 'loop.py', path: 'sol/agent/loop.py', type: 'file' },
-            { name: 'verifier.py', path: 'sol/agent/verifier.py', type: 'file', status: 'added' },
+            { name: 'loop.py', path: 'anvil/agent/loop.py', type: 'file' },
+            { name: 'verifier.py', path: 'anvil/agent/verifier.py', type: 'file', status: 'added' },
           ],
         },
       ],
@@ -52,7 +52,7 @@ export default function App() {
         setDiffs((prev) => [
           ...prev,
           {
-            path: 'sol/server.py',
+            path: 'anvil/server.py',
             status: 'modified',
             oldContent: '# Previous server code snippet',
             newContent: data.data.output || '# Updated code snippet',
@@ -78,7 +78,7 @@ export default function App() {
         <div>
           <div className="flex items-center gap-2 mb-6">
             <Cpu className="h-6 w-6 text-indigo-400" />
-            <h1 className="text-lg font-bold tracking-tight text-white">Sol Studio</h1>
+            <h1 className="text-lg font-bold tracking-tight text-white">Anvil Studio</h1>
           </div>
 
           <div className="space-y-4">
@@ -153,7 +153,7 @@ export default function App() {
               {steps.length === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-500">
                   <p className="text-sm">No active execution task.</p>
-                  <p className="text-xs text-slate-600 mt-1">Enter a task prompt below to launch Sol.</p>
+                  <p className="text-xs text-slate-600 mt-1">Enter a task prompt below to launch Anvil.</p>
                 </div>
               ) : (
                 steps.map((step, idx) => (
@@ -174,7 +174,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Ask Sol to write code, refactor a module, or create a feature..."
+              placeholder="Ask Anvil to write code, refactor a module, or create a feature..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRun()}
