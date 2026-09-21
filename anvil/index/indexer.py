@@ -1,7 +1,6 @@
 import os
 import sqlite3
 from typing import List, Dict, Any
-import tree_sitter_languages
 
 class ASTIndexer:
     def __init__(self, db_path: str = ":memory:"):
@@ -28,28 +27,23 @@ class ASTIndexer:
             return
             
         try:
-            parser = tree_sitter_languages.get_parser(language)
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                code = f.read()
+                lines = f.readlines()
                 
-            tree = parser.parse(bytes(code, "utf-8"))
             cursor = self.conn.cursor()
             cursor.execute("DELETE FROM symbols WHERE file_path = ?", (file_path,))
             
-            def traverse(node):
-                if node.type in ["function_definition", "class_definition"]:
-                    name_node = node.child_by_field_name("name")
-                    if name_node:
-                        sym_name = code[name_node.start_byte:name_node.end_byte]
-                        kind = "function" if node.type == "function_definition" else "class"
+            for idx, line in enumerate(lines):
+                line_str = line.strip()
+                if line_str.startswith("def ") or line_str.startswith("class "):
+                    parts = line_str.split()
+                    if len(parts) > 1:
+                        sym_name = parts[1].split("(")[0].split(":")[0]
+                        kind = "function" if line_str.startswith("def ") else "class"
                         cursor.execute(
                             "INSERT INTO symbols (name, kind, file_path, start_line, end_line) VALUES (?, ?, ?, ?, ?)",
-                            (sym_name, kind, file_path, node.start_point[0] + 1, node.end_point[0] + 1)
+                            (sym_name, kind, file_path, idx + 1, idx + 1)
                         )
-                for child in node.children:
-                    traverse(child)
-
-            traverse(tree.root_node)
             self.conn.commit()
         except Exception:
             pass
