@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Cpu, Code, Layers, FileCode } from 'lucide-react';
+import { Play, Cpu, Code, FileCode, History } from 'lucide-react';
 import { DiffViewer, DiffFile } from './components/DiffViewer';
 import { FileExplorer, FileNode } from './components/FileExplorer';
+import { SessionList, SessionItem } from './components/SessionList';
 
 interface Step {
   type: string;
@@ -12,7 +13,9 @@ export default function App() {
   const [prompt, setPrompt] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
   const [diffs, setDiffs] = useState<DiffFile[]>([]);
-  const [activeTab, setActiveTab] = useState<'stream' | 'diff'>('stream');
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'stream' | 'diff' | 'history'>('stream');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('google');
@@ -27,38 +30,37 @@ export default function App() {
         { name: 'server.py', path: 'anvil/server.py', type: 'file', status: 'modified' },
         { name: 'cli.py', path: 'anvil/cli.py', type: 'file' },
         {
-          name: 'agent',
-          path: 'anvil/agent',
+          name: 'session',
+          path: 'anvil/session',
           type: 'directory',
-          children: [
-            { name: 'loop.py', path: 'anvil/agent/loop.py', type: 'file' },
-            { name: 'verifier.py', path: 'anvil/agent/verifier.py', type: 'file', status: 'added' },
-          ],
+          children: [{ name: 'store.py', path: 'anvil/session/store.py', type: 'file', status: 'added' }],
         },
       ],
     },
     { name: 'README.md', path: 'README.md', type: 'file' },
   ];
 
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch('/api/sessions');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  };
+
   useEffect(() => {
+    fetchSessions();
     const socket = new WebSocket(`ws://${window.location.host}/ws`);
     socket.onopen = () => setConnected(true);
     socket.onclose = () => setConnected(false);
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setSteps((prev) => [...prev, data]);
-      
-      if (data.type === 'tool_call_end' && data.data?.name === 'edit_file') {
-        setDiffs((prev) => [
-          ...prev,
-          {
-            path: 'anvil/server.py',
-            status: 'modified',
-            oldContent: '# Previous server code snippet',
-            newContent: data.data.output || '# Updated code snippet',
-          },
-        ]);
-      }
+      fetchSessions();
     };
     setWs(socket);
     return () => socket.close();
@@ -68,6 +70,22 @@ export default function App() {
     if (ws && prompt.trim()) {
       setSteps([]);
       ws.send(JSON.stringify({ prompt }));
+    }
+  };
+
+  const handleSelectSession = async (id: string) => {
+    setActiveSessionId(id);
+    try {
+      const res = await fetch(`/api/sessions/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.transcript) {
+          setSteps(data.transcript);
+          setActiveTab('stream');
+        }
+      }
+    } catch (e) {
+      // Ignore
     }
   };
 
@@ -115,12 +133,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* File Explorer Tree Panel */}
-      <div className="w-64 border-r border-slate-800 bg-slate-900/50">
+      {/* Workspace Files */}
+      <div className="w-60 border-r border-slate-800 bg-slate-900/50">
         <FileExplorer files={workspaceFiles} />
       </div>
 
-      {/* Main Workspace */}
+      {/* Main Execution Studio */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Workspace Tab Header */}
         <div className="flex items-center border-b border-slate-800 bg-slate-900/80 px-4">
@@ -144,11 +162,21 @@ export default function App() {
           >
             <FileCode className="h-4 w-4" /> Real-time Diffs ({diffs.length})
           </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === 'history'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <History className="h-4 w-4" /> Session History ({sessions.length})
+          </button>
         </div>
 
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden">
-          {activeTab === 'stream' ? (
+          {activeTab === 'stream' && (
             <div className="h-full p-4 overflow-y-auto space-y-3">
               {steps.length === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-500">
@@ -164,8 +192,16 @@ export default function App() {
                 ))
               )}
             </div>
-          ) : (
-            <DiffViewer files={diffs} />
+          )}
+
+          {activeTab === 'diff' && <DiffViewer files={diffs} />}
+
+          {activeTab === 'history' && (
+            <SessionList
+              sessions={sessions}
+              onSelectSession={handleSelectSession}
+              activeSessionId={activeSessionId}
+            />
           )}
         </div>
 
