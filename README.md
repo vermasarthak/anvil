@@ -1,18 +1,16 @@
 # Anvil Engine
 
-A self-hosted, event-driven agentic framework and web workspace for local-first software development. 
-
-Anvil decouples execution safety from LLM reasoning through isolated sub-process sandboxing, reactive JSON-RPC WebSocket transport, incremental AST symbol graph indexing, and automated regression verification.
+Anvil is a self-hosted coding-agent prototype with a Python backend and a React workspace. It combines tool execution, source indexing, session storage, and a browser UI for experimenting with local-first development workflows.
 
 ---
 
 ## Architectural Principles
 
-1. **System Isolation**: Sandboxed tool invocation via ephemeral execution contexts (subprocess boundaries with strict signal/timeout controls and optional Docker containerization).
-2. **Local-First & Multi-Provider Router**: Model-agnostic transport layer translating unified agent tool-calling payloads into provider-native schemas (Ollama JSON-RPC, Google Gemini REST, Anthropic tool-use).
-3. **AST Symbol Graph**: Incremental structural parsing of project source code into SQLite relational symbol definitions (`function`, `class`, `module`) for exact scope navigation instead of brute-force token packing.
-4. **Deterministic Verification Loop**: Closed-loop agentic workflow (`Plan → Execute → Verify → Remediate`) executing workspace test harnesses (`pytest`, `npm test`) post-mutation to eliminate hallucinations.
-5. **Atomic Version Control Integration**: Step-level Git branch isolation and unified diff generation for safe step rollback.
+1. **Bounded tool execution**: Subprocess commands support timeouts; Docker integration is available as an optional sandbox building block.
+2. **Provider abstraction**: The router currently supports Ollama and Google providers behind a shared interface.
+3. **Source-aware navigation**: The AST indexer records Python symbols in SQLite for targeted code search.
+4. **Verification hooks**: Tooling and agent paths can invoke project checks after changes.
+5. **Git visibility**: Diff and commit tools make repository changes inspectable from the workspace.
 
 ---
 
@@ -80,9 +78,18 @@ pip install -e .
 
 ### Running Anvil Studio
 
+The API and web UI run as separate development processes:
+
 ```bash
-# Start backend server & frontend UI
+# Terminal 1: start the API server
 anvil studio
+```
+
+```bash
+# Terminal 2: start the Vite development server
+cd studio
+npm ci
+npm run dev
 ```
 
 Open `http://localhost:3000` in your browser.
@@ -91,32 +98,34 @@ Open `http://localhost:3000` in your browser.
 
 ## Development & Testing
 
-Run the automated test suite covering tool primitives, AST indexing, and token metrics:
+Run the automated Python test suite:
 
 ```bash
 python3 -m unittest discover tests
 ```
 
+Build the frontend before a release:
+
+```bash
+cd studio
+npm ci
+npm run build
+```
+
+Convenience commands are also available through `make test`, `make frontend-build`, and `make check`.
+
 ---
 
-## Configuration (`anvil.toml`)
+## Configuration
 
-```toml
-[engine]
-workspace_root = "."
-max_steps = 15
+The Studio config endpoint accepts a provider, model, and optional API key at runtime. Keep credentials in local environment configuration; do not commit keys or generated SQLite session data.
 
-[model]
-provider = "google"
-model = "gemini-2.5-flash"
+## Project status
 
-[sandbox]
-mode = "subprocess" # Options: "subprocess", "docker"
-timeout_seconds = 60
-```
+This is an active prototype. Review tool permissions and workspace boundaries before using it with source code you care about.
 
 ---
 
 ## License
 
-Apache 2.0. Built by Sarthak Verma.
+Apache 2.0. Built by Sarthak Verma, with Codex-assisted development.
