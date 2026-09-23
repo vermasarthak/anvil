@@ -1,11 +1,13 @@
 import abc
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 
 class ToolResult:
     def __init__(self, success: bool, output: str, error: Optional[str] = None):
         self.success = success
         self.output = output
         self.error = error
+
 
 class BaseTool(abc.ABC):
     name: str
@@ -23,5 +25,5 @@ class BaseTool(abc.ABC):
                 "name": self.name,
                 "description": self.description,
                 "parameters": self.parameters,
-            }
+            },
         }

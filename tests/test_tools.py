@@ -1,24 +1,26 @@
-import unittest
-import os
 import asyncio
+import os
 import tempfile
-from anvil.tools.file_ops import ReadFileTool, CreateFileTool, EditFileTool
-from anvil.tools.grep import GrepTool
+import unittest
+
 from anvil.index.indexer import ASTIndexer
 from anvil.telemetry import TokenMetrics
+from anvil.tools.file_ops import CreateFileTool, EditFileTool, ReadFileTool
+from anvil.tools.grep import GrepTool
+
 
 class TestAnvilSuite(unittest.TestCase):
     def test_file_ops_tools(self):
         async def run_test():
             with tempfile.TemporaryDirectory() as tmp_dir:
                 test_file = os.path.join(tmp_dir, "test.py")
-                
+
                 # Test Create
                 create_tool = CreateFileTool()
                 res = await create_tool.execute(path=test_file, content="def foo():\n    return 42\n")
                 self.assertTrue(res.success)
                 self.assertTrue(os.path.exists(test_file))
-                
+
                 # Test Read
                 read_tool = ReadFileTool()
                 res_read = await read_tool.execute(path=test_file)
@@ -29,7 +31,7 @@ class TestAnvilSuite(unittest.TestCase):
                 edit_tool = EditFileTool()
                 res_edit = await edit_tool.execute(path=test_file, old_string="return 42", new_string="return 100")
                 self.assertTrue(res_edit.success)
-                
+
                 res_read2 = await read_tool.execute(path=test_file)
                 self.assertIn("return 100", res_read2.output)
 
@@ -69,6 +71,7 @@ class TestAnvilSuite(unittest.TestCase):
         self.assertEqual(data["prompt_tokens"], 1000)
         self.assertEqual(data["completion_tokens"], 500)
         self.assertGreater(data["estimated_cost_usd"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

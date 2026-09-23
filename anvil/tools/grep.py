@@ -1,6 +1,8 @@
 import os
-from typing import List, Dict, Any, Optional
+from typing import Optional
+
 from anvil.tools.base import BaseTool, ToolResult
+
 
 class GrepTool(BaseTool):
     name = "grep"
@@ -9,9 +11,9 @@ class GrepTool(BaseTool):
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Regex or substring query."},
-            "path": {"type": "string", "description": "Subdirectory path filter."}
+            "path": {"type": "string", "description": "Subdirectory path filter."},
         },
-        "required": ["query"]
+        "required": ["query"],
     }
 
     async def execute(self, query: str, path: Optional[str] = None) -> ToolResult:

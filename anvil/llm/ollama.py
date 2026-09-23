@@ -1,12 +1,16 @@
-import json
+from typing import Any, Dict, List, Optional
+
 import httpx
-from typing import List, Dict, Any, Optional
+
 from anvil.llm.base import BaseLLMProvider
-from anvil.llm.schema import AgentMessage, LLMResponse, ToolCall
 from anvil.llm.google import LocalMockProvider
+from anvil.llm.schema import AgentMessage, LLMResponse, ToolCall
+
 
 class OllamaProvider(BaseLLMProvider):
-    def __init__(self, model_name: str = "qwen3-coder:14b", api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(
+        self, model_name: str = "qwen3-coder:14b", api_key: Optional[str] = None, base_url: Optional[str] = None
+    ):
         super().__init__(model_name, api_key, base_url or "http://localhost:11434")
         self.fallback_engine = LocalMockProvider()
 
@@ -20,22 +24,14 @@ class OllamaProvider(BaseLLMProvider):
         for msg in messages:
             m = {"role": msg.role, "content": msg.content}
             if msg.tool_calls:
-                m["tool_calls"] = [
-                    {
-                        "function": {
-                            "name": tc.name,
-                            "arguments": tc.arguments
-                        }
-                    }
-                    for tc in msg.tool_calls
-                ]
+                m["tool_calls"] = [{"function": {"name": tc.name, "arguments": tc.arguments}} for tc in msg.tool_calls]
             ollama_messages.append(m)
 
         payload: Dict[str, Any] = {
             "model": self.model_name,
             "messages": ollama_messages,
             "stream": False,
-            "options": {"temperature": temperature}
+            "options": {"temperature": temperature},
         }
 
         if tools:
@@ -46,7 +42,7 @@ class OllamaProvider(BaseLLMProvider):
                 response = await client.post(f"{self.base_url}/api/chat", json=payload)
                 response.raise_for_status()
                 data = response.json()
-            except Exception as e:
+            except Exception:
                 # Fallback to local engine if Ollama service is not running locally!
                 return await self.fallback_engine.generate(messages, tools, temperature)
 
@@ -58,11 +54,7 @@ class OllamaProvider(BaseLLMProvider):
             for idx, tc in enumerate(msg_data["tool_calls"]):
                 func = tc.get("function", {})
                 tool_calls.append(
-                    ToolCall(
-                        id=f"call_{idx}",
-                        name=func.get("name", ""),
-                        arguments=func.get("arguments", {})
-                    )
+                    ToolCall(id=f"call_{idx}", name=func.get("name", ""), arguments=func.get("arguments", {}))
                 )
 
         return LLMResponse(content=content, tool_calls=tool_calls, raw_response=data)

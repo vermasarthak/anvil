@@ -1,15 +1,13 @@
-import unittest
-import os
 import asyncio
+import os
 import tempfile
-import time
-from anvil.tools.file_ops import ReadFileTool, CreateFileTool, EditFileTool
-from anvil.tools.grep import GrepTool
-from anvil.tools.shell import RunCommandTool
+import unittest
+
 from anvil.index.indexer import ASTIndexer
-from anvil.telemetry import TokenMetrics
 from anvil.session.store import SessionStore
-from anvil.agent.verifier import Verifier
+from anvil.tools.file_ops import CreateFileTool, EditFileTool, ReadFileTool
+from anvil.tools.shell import RunCommandTool
+
 
 class StressTestSuite(unittest.TestCase):
     def test_file_ops_concurrency_and_stress(self):
@@ -24,7 +22,7 @@ class StressTestSuite(unittest.TestCase):
                 for i in range(50):
                     f_path = os.path.join(tmp_dir, f"file_{i}.py")
                     tasks.append(create_tool.execute(path=f_path, content=f"def func_{i}():\n    return {i}\n"))
-                
+
                 results = await asyncio.gather(*tasks)
                 for res in results:
                     self.assertTrue(res.success)
@@ -33,7 +31,9 @@ class StressTestSuite(unittest.TestCase):
                 edit_tasks = []
                 for i in range(50):
                     f_path = os.path.join(tmp_dir, f"file_{i}.py")
-                    edit_tasks.append(edit_tool.execute(path=f_path, old_string=f"return {i}", new_string=f"return {i * 100}"))
+                    edit_tasks.append(
+                        edit_tool.execute(path=f_path, old_string=f"return {i}", new_string=f"return {i * 100}")
+                    )
 
                 edit_results = await asyncio.gather(*edit_tasks)
                 for res in edit_results:
@@ -48,7 +48,7 @@ class StressTestSuite(unittest.TestCase):
     def test_ast_indexer_large_codebase_stress(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             indexer = ASTIndexer()
-            
+
             # Generate 100 files with multiple definitions
             for i in range(100):
                 f_path = os.path.join(tmp_dir, f"module_{i}.py")
@@ -88,7 +88,7 @@ class StressTestSuite(unittest.TestCase):
                     session_id=f"sess_{i}",
                     title=f"Task {i}",
                     model="google/gemini-2.5-flash",
-                    transcript=[{"step": 1, "type": "task_start"}]
+                    transcript=[{"step": 1, "type": "task_start"}],
                 )
 
             sessions = store.list_sessions()
@@ -97,6 +97,7 @@ class StressTestSuite(unittest.TestCase):
             sess_10 = store.get_session("sess_10")
             self.assertIsNotNone(sess_10)
             self.assertEqual(sess_10["title"], "Task 10")
+
 
 if __name__ == "__main__":
     unittest.main()

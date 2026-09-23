@@ -1,10 +1,12 @@
 import click
 import uvicorn
 
+
 @click.group()
 def main():
     """Anvil — Open-Source Autonomous Coding Engine"""
     pass
+
 
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host address to bind server.")
@@ -13,6 +15,7 @@ def studio(host: str, port: int):
     """Launch the Anvil Studio web UI and agent server."""
     click.echo(f"🚀 Launching Anvil Studio at http://{host}:{port}")
     uvicorn.run("anvil.server:app", host=host, port=port, reload=True)
+
 
 if __name__ == "__main__":
     main()

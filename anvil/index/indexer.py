@@ -1,6 +1,7 @@
 import os
 import sqlite3
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 
 class ASTIndexer:
     def __init__(self, db_path: str = ":memory:"):
@@ -25,14 +26,14 @@ class ASTIndexer:
     def index_file(self, file_path: str, language: str = "python"):
         if not os.path.exists(file_path):
             return
-            
+
         try:
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                 lines = f.readlines()
-                
+
             cursor = self.conn.cursor()
             cursor.execute("DELETE FROM symbols WHERE file_path = ?", (file_path,))
-            
+
             for idx, line in enumerate(lines):
                 line_str = line.strip()
                 if line_str.startswith("def ") or line_str.startswith("class "):
@@ -42,7 +43,7 @@ class ASTIndexer:
                         kind = "function" if line_str.startswith("def ") else "class"
                         cursor.execute(
                             "INSERT INTO symbols (name, kind, file_path, start_line, end_line) VALUES (?, ?, ?, ?, ?)",
-                            (sym_name, kind, file_path, idx + 1, idx + 1)
+                            (sym_name, kind, file_path, idx + 1, idx + 1),
                         )
             self.conn.commit()
         except Exception:
@@ -51,17 +52,19 @@ class ASTIndexer:
     def search_symbols(self, query: str) -> List[Dict[str, Any]]:
         cursor = self.conn.cursor()
         cursor.execute(
-            "SELECT name, kind, file_path, start_line, end_line FROM symbols WHERE name LIKE ?",
-            (f"%{query}%",)
+            "SELECT name, kind, file_path, start_line, end_line FROM symbols WHERE name LIKE ?", (f"%{query}%",)
         )
         rows = cursor.fetchall()
-        return [
-            {
-                "name": r[0],
-                "kind": r[1],
-                "file_path": r[2],
-                "start_line": r[3],
-                "end_line": r[4]
-            }
-            for r in rows
-        ]
+        return [{"name": r[0], "kind": r[1], "file_path": r[2], "start_line": r[3], "end_line": r[4]} for r in rows]
+
+    def close(self):
+        """Closes SQLite database connection cleanly."""
+        if hasattr(self, "conn") and self.conn is not None:
+            self.conn.close()
+            self.conn = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

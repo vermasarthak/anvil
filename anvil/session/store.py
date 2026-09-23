@@ -1,8 +1,8 @@
-import os
 import json
 import sqlite3
 import time
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 
 class SessionStore:
     def __init__(self, db_path: str = "sessions.db"):
@@ -33,7 +33,7 @@ class SessionStore:
                 title=excluded.title,
                 transcript=excluded.transcript
             """,
-            (session_id, title, model, time.time(), json.dumps(transcript))
+            (session_id, title, model, time.time(), json.dumps(transcript)),
         )
         self.conn.commit()
 
@@ -41,10 +41,7 @@ class SessionStore:
         cursor = self.conn.cursor()
         cursor.execute("SELECT id, title, model, created_at FROM sessions ORDER BY created_at DESC")
         rows = cursor.fetchall()
-        return [
-            {"id": r[0], "title": r[1], "model": r[2], "created_at": r[3]}
-            for r in rows
-        ]
+        return [{"id": r[0], "title": r[1], "model": r[2], "created_at": r[3]} for r in rows]
 
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         cursor = self.conn.cursor()
@@ -52,10 +49,4 @@ class SessionStore:
         row = cursor.fetchone()
         if not row:
             return None
-        return {
-            "id": row[0],
-            "title": row[1],
-            "model": row[2],
-            "created_at": row[3],
-            "transcript": json.loads(row[4])
-        }
+        return {"id": row[0], "title": row[1], "model": row[2], "created_at": row[3], "transcript": json.loads(row[4])}

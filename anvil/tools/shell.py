@@ -1,7 +1,9 @@
 import asyncio
 import os
 from typing import Optional
+
 from anvil.tools.base import BaseTool, ToolResult
+
 
 class RunCommandTool(BaseTool):
     name = "run_command"
@@ -11,19 +13,16 @@ class RunCommandTool(BaseTool):
         "properties": {
             "command": {"type": "string", "description": "The shell command line to run."},
             "cwd": {"type": "string", "description": "Optional working directory for execution."},
-            "timeout": {"type": "integer", "description": "Timeout in seconds (default 60)."}
+            "timeout": {"type": "integer", "description": "Timeout in seconds (default 60)."},
         },
-        "required": ["command"]
+        "required": ["command"],
     }
 
     async def execute(self, command: str, cwd: Optional[str] = None, timeout: int = 60) -> ToolResult:
         try:
             target_cwd = cwd or os.getcwd()
             proc = await asyncio.create_subprocess_shell(
-                command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=target_cwd
+                command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=target_cwd
             )
             try:
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=float(timeout))
@@ -36,6 +35,7 @@ class RunCommandTool(BaseTool):
                     return ToolResult(success=False, output=combined, error=f"Exit code {proc.returncode}")
             except asyncio.TimeoutError:
                 proc.kill()
+                await proc.wait()
                 return ToolResult(success=False, output="", error=f"Command timed out after {timeout} seconds")
         except Exception as e:
             return ToolResult(success=False, output="", error=str(e))

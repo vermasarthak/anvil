@@ -1,15 +1,16 @@
-import asyncio
-from typing import List, Dict, Any, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict, List, Optional
+
 from anvil.llm.base import BaseLLMProvider
 from anvil.llm.schema import AgentMessage
 from anvil.tools.base import BaseTool
+
 
 class AgentLoop:
     def __init__(
         self,
         provider: BaseLLMProvider,
         tools: List[BaseTool],
-        on_event_cb: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
+        on_event_cb: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ):
         self.provider = provider
         self.tools = {t.name: t for t in tools}
@@ -24,18 +25,18 @@ class AgentLoop:
         self.messages.append(
             AgentMessage(
                 role="system",
-                content="You are Anvil, an expert autonomous AI software engineer. Analyze the workspace, formulate a precise plan, and execute tool calls to complete the user's task."
+                content="You are Anvil, an expert autonomous AI software engineer. Analyze the workspace, formulate a precise plan, and execute tool calls to complete the user's task.",
             )
         )
         self.messages.append(AgentMessage(role="user", content=prompt))
-        
+
         await self.emit_event("task_start", {"prompt": prompt})
 
         tool_schemas = [t.to_schema() for t in self.tools.values()]
 
         for step in range(max_steps):
             await self.emit_event("step_start", {"step": step + 1})
-            
+
             try:
                 response = await self.provider.generate(self.messages, tools=tool_schemas)
             except Exception as e:
@@ -63,15 +64,8 @@ class AgentLoop:
                     success = t_res.success
 
                 await self.emit_event("tool_call_end", {"name": tc.name, "success": success, "output": res_text})
-                
-                self.messages.append(
-                    AgentMessage(
-                        role="tool",
-                        content=res_text,
-                        tool_call_id=tc.id,
-                        name=tc.name
-                    )
-                )
+
+                self.messages.append(AgentMessage(role="tool", content=res_text, tool_call_id=tc.id, name=tc.name))
 
         final_msg = "Task reached maximum execution step limit."
         await self.emit_event("task_limit_reached", {"message": final_msg})

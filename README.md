@@ -128,4 +128,4 @@ This is an active prototype. Review tool permissions and workspace boundaries be
 
 ## License
 
-Apache 2.0. Built by Sarthak Verma, with Codex-assisted development.
+Apache 2.0. Built by Sarthak Verma.

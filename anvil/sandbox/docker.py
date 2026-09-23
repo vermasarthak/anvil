@@ -1,8 +1,7 @@
-import os
-import tempfile
 import asyncio
-from typing import Optional
-from anvil.tools.base import BaseTool, ToolResult
+
+from anvil.tools.base import ToolResult
+
 
 class DockerSandbox:
     def __init__(self, image: str = "python:3.11-slim"):
@@ -12,15 +11,13 @@ class DockerSandbox:
         docker_cmd = f'docker run --rm -v "{cwd}:/workspace" -w /workspace {self.image} sh -c "{command}"'
         try:
             proc = await asyncio.create_subprocess_shell(
-                docker_cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                docker_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=float(timeout))
             out_str = stdout.decode("utf-8", errors="replace")
             err_str = stderr.decode("utf-8", errors="replace")
             combined = f"{out_str}\n{err_str}".strip()
-            
+
             if proc.returncode == 0:
                 return ToolResult(success=True, output=combined)
             else:
